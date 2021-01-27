@@ -1,4 +1,4 @@
-local ku = import 'kubeutil/main.libsonnet';
+local ku = import 'kubeutil.libsonnet';
 
 local default = {
   apiVersion: 'pingcap.com/v1alpha1',

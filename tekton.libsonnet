@@ -1,4 +1,4 @@
-local ku = import 'kubeutil/main.libsonnet';
+local ku = import 'kubeutil.libsonnet';
 
 {
   task::
