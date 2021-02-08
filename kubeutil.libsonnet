@@ -3,6 +3,8 @@ local k = import 'github.com/jsonnet-libs/k8s-alpha/1.18/main.libsonnet';
   metaMixin(meta):: { metadata+: meta },
   specMixin(spec):: { spec+: spec },
 
+  withOwnerReferences(owners):: self.metaMixin({ ownerReferences+: if std.isArray(owners) then owners else [owners] }),
+
   // configMapVolumeMount adds a configMap to deployment-like objects.
   // It will also add an annotation hash to ensure the pods are re-deployed
   // when the config map changes.
