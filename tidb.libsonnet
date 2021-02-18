@@ -1,6 +1,6 @@
 local ku = import 'kubeutil.libsonnet';
 
-local default = {
+local defaultCluster = {
   apiVersion: 'pingcap.com/v1alpha1',
   kind: 'TidbCluster',
   spec: {
@@ -64,7 +64,7 @@ local default = {
           pump: 'tidb-binlog',
           tiflash: 'tiflash',
         };
-        default
+        defaultCluster
         { metadata: { name: name } }
         + { spec+: { [c]+: { image: '%s/%s:%s' % [imageFrom, c2i[c], version] } for c in std.objectFields(c2i) } }
         + (if withCDC > 0 then self.withCDCReplicas(withCDC) else {})
@@ -141,5 +141,34 @@ local default = {
           name: '%s-%s' % [cluster, component],
           labels: { 'tidb/cluster': cluster, 'tidb/component': component },
         }),
+    },
+  monitor::
+    {
+      new(name, clusterNames=null, imageFrom='pingcap', initializerVersion='nightly', reloaderVersion='v1.0.1'):: {
+        apiVersion: 'pingcap.com/v1alpha1',
+        kind: 'TidbMonitor',
+        metadata: { name: name },
+        spec: {
+          imagePullPolicy: 'Always',
+          clusters: if (clusterNames == null) then [{ name: name }] else clusterNames,
+          prometheus: {
+            baseImage: 'prom/prometheus',
+            version: 'v2.18.1',
+          },
+          grafana: {
+            baseImage: 'grafana/grafana',
+            version: '6.1.6',
+            service: { type: 'NodePort' },
+          },
+          initializer: {
+            baseImage: imageFrom + '/tidb-monitor-initializer',
+            version: initializerVersion,
+          },
+          reloader: {
+            baseImage: imageFrom + '/tidb-monitor-reloader',
+            version: reloaderVersion,
+          },
+        },
+      },
     },
 }
