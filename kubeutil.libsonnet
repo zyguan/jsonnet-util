@@ -5,6 +5,45 @@ local k = import 'github.com/jsonnet-libs/k8s-alpha/1.18/main.libsonnet';
 
   withOwnerReferences(owners):: self.metaMixin({ ownerReferences+: if std.isArray(owners) then owners else [owners] }),
 
+  script(
+    name,
+    source,
+    image='busybox:stable',
+    imagePullPolicy='IfNotPresent',
+    command=['/bin/sh'],
+    main='main.sh',
+    cron='@daily',
+    serviceAccountName='default',
+    backoffLimit=0,
+  )::
+    local data = if (std.type(source) == 'string') then { [main]: source } else source;
+    {
+      configMap:
+        k.core.v1.configMap.new(name, data),
+      job::
+        local job = k.batch.v1.job;
+        job.new(name)
+        + job.spec.withBackoffLimit(backoffLimit)
+        + job.spec.template.metadata.withLabels({ name: name })
+        + job.spec.template.spec.withServiceAccountName(serviceAccountName)
+        + job.spec.template.spec.withRestartPolicy('Never')
+        + job.spec.template.spec.withVolumes([k.core.v1.volume.fromConfigMap('script', name)])
+        + job.spec.template.spec.withContainers([
+          k.core.v1.container.new('main', image) {
+            command: command + [main],
+            workingDir: '/script',
+            volumeMounts: [{ name: 'script', mountPath: '/script' }],
+          },
+        ]),
+      cronJob::
+        local jobTemplate = self.job.spec;
+        local cronJob = k.batch.v1beta1.cronJob;
+        cronJob.new(name, cron, [])
+        + cronJob.spec.withConcurrencyPolicy('Forbid')
+        + cronJob.spec.withSuccessfulJobsHistoryLimit(1)
+        + { spec+: { jobTemplate+: { spec+: jobTemplate } } },
+    },
+
   // configMapVolumeMount adds a configMap to deployment-like objects.
   // It will also add an annotation hash to ensure the pods are re-deployed
   // when the config map changes.

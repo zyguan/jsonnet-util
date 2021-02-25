@@ -1,26 +1,25 @@
 local ku = import 'kubeutil.libsonnet';
 
 {
+  local type(kind) = { apiVersion: 'tekton.dev/v1beta1', kind: kind },
+
   task::
-    local kind = { apiVersion: 'tekton.dev/v1beta1', kind: 'Task' };
     {
-      new(name):: kind + ku.metaMixin({ name: name }),
+      new(name):: type('Task') + ku.metaMixin({ name: name }),
       step(name, image):: { name: name, image: image },
     },
 
   taskRun::
-    local kind = { apiVersion: 'tekton.dev/v1beta1', kind: 'TaskRun' };
     {
       new(name, serviceAccountName='default', generate=false)::
-        kind
+        type('TaskRun')
         + ku.metaMixin(if (generate) then { generateName: name } else { name: name })
         + ku.specMixin({ serviceAccountName: serviceAccountName }),
     },
 
   pipeline::
-    local kind = { apiVersion: 'tekton.dev/v1beta1', kind: 'Pipeline' };
     {
-      new(name):: kind + ku.metaMixin({ name: name }),
+      new(name):: type('Pipeline') + ku.metaMixin({ name: name }),
       task(name, taskRefName='', runAfter=[])::
         {
           name: name,
@@ -32,10 +31,9 @@ local ku = import 'kubeutil.libsonnet';
     },
 
   pipelineRun::
-    local kind = { apiVersion: 'tekton.dev/v1beta1', kind: 'PipelineRun' };
     {
       new(name, serviceAccountName='default', generate=false)::
-        kind
+        type('PipelineRun')
         + ku.metaMixin(if (generate) then { generateName: name } else { name: name })
         + ku.specMixin({ serviceAccountName: serviceAccountName }),
     },
