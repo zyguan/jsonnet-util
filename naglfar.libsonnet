@@ -39,11 +39,11 @@ local ku = import 'kubeutil.libsonnet';
           },
         }) + self,
 
-      withPDConfig(config):: self + self.serverConfigMixin('pd', config),
-      withDBConfig(config):: self + self.serverConfigMixin('tidb', config),
-      withKVConfig(config):: self + self.serverConfigMixin('tikv', config),
-      serverConfigMixin(name, configStr):: { spec+: { tidbCluster+: { serverConfigs+: {
-        [name]: configStr,
+      withPDConfig(config):: self.serverConfigMixin('pd', config),
+      withDBConfig(config):: self.serverConfigMixin('tidb', config),
+      withKVConfig(config):: self.serverConfigMixin('tikv', config),
+      serverConfigMixin(name, config):: { spec+: { tidbCluster+: { serverConfigs+: {
+        [name]: config,
       } } } },
 
       pdInstances(hosts, deployConfig):: self.instancesMixin('pd', hosts, deployConfig),
@@ -80,7 +80,7 @@ local ku = import 'kubeutil.libsonnet';
       name,
       resourceRequest={ name: '', node: 'workload' },
       command=[],
-      image='hub.pingcap.net/mirrors/debian:buster',
+      image='debian:buster',
       imagePullPolicy='IfNotPresent',
     ):: {
       spec+: {
